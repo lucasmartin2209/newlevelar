@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Level - Oferta Diaria</title>
+    <!-- Incluye Tailwind CSS para un estilo moderno y responsivo -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .message-box {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 1rem 2rem;
+            border-radius: 9999px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            transition: opacity 0.3s ease-in-out;
+            opacity: 1;
+            visibility: visible;
+            text-align: center;
+        }
+        .message-box.show {
+            opacity: 1;
+            visibility: visible;
+        }
+    </style>
+</head>
+<body class="bg-black flex flex-col items-center justify-start min-h-screen text-white p-4">
+
+    <!-- Mensaje de confirmación o error -->
+    <div id="message-box" class="message-box"></div>
+
+    <!-- Contenedor principal de la aplicación -->
+    <main class="w-full max-w-sm mx-auto bg-black rounded-3xl shadow-xl overflow-hidden mt-8">
+
+        <!-- Sección de la oferta diaria -->
+        <div class="flex flex-col items-center p-6">
+            <!-- Logo de la empresa en el encabezado -->
+            <img 
+                src="https://newlevel.com.ar/wp-content/uploads/2021/04/NuevoLogoNeonSlogan.png" 
+                alt="Logo de New Level" 
+                class="mb-6 mt-4 mx-auto rounded-xl shadow-md"
+            >
+            
+            <p class="text-md text-white text-center mb-6">¡Mira el tráiler de nuestra oferta digital exclusiva del día!</p>
+            
+            <!-- Video de la oferta -->
+            <div class="aspect-w-16 aspect-h-9 w-full rounded-2xl overflow-hidden shadow-lg mb-6">
+                <iframe 
+                    id="offer-video"
+                    class="w-full h-full"
+                    src="https://www.youtube.com/embed/vtFhDrMIZjE" 
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen
+                ></iframe>
+            </div>
+
+            <h2 class="text-2xl font-semibold text-center mb-2 text-white">¡Oferta Especial!</h2>
+            <p class="text-white text-center mb-2">Juego digital: God of War Ragnarök PS4 y PS5</p>
+            <p class="text-3xl font-bold text-green-400 text-center mb-8">$9.000 ARS</p>
+
+            <!-- Contenedor de los campos de entrada -->
+            <div class="w-full">
+                <div class="mb-4">
+                    <input type="text" id="nombre" name="nombre" placeholder="Nombre y Apellido" required 
+                           class="w-full px-4 py-3 rounded-xl bg-gray-900 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="mb-4">
+                    <input type="tel" id="whatsapp" name="whatsapp" placeholder="Número de WhatsApp" required 
+                           class="w-full px-4 py-3 rounded-xl bg-gray-900 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div class="mb-6">
+                    <input type="email" id="email" name="email" placeholder="Email" required 
+                           class="w-full px-4 py-3 rounded-xl bg-gray-900 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <!-- Botón de compra -->
+                <button 
+                    id="whatsapp-button"
+                    class="w-full py-4 px-6 bg-green-500 text-white font-bold rounded-full shadow-lg 
+                           hover:bg-green-600 transition-colors duration-300 focus:outline-none focus:ring-4 focus:ring-green-300"
+                >
+                    Comprar ahora por WhatsApp
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Script para Firebase y la lógica del botón -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        
+        // Función para mostrar mensajes de estado
+        function showMessage(message, type = 'success') {
+            const messageBox = document.getElementById('message-box');
+            messageBox.textContent = message;
+            messageBox.className = `message-box show ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}`;
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+            }, 3000);
+        }
+
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+        let db, auth;
+        let userId = null;
+
+        if (Object.keys(firebaseConfig).length > 0) {
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                console.log("Firebase initialized.");
+
+                // Autenticar al usuario
+                async function authenticate() {
+                    if (typeof __initial_auth_token !== 'undefined') {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                    userId = auth.currentUser?.uid || crypto.randomUUID();
+                }
+
+                document.addEventListener('DOMContentLoaded', async () => {
+                    await authenticate();
+
+                    const nombreInput = document.getElementById('nombre');
+                    const whatsappInput = document.getElementById('whatsapp');
+                    const emailInput = document.getElementById('email');
+                    const whatsappButton = document.getElementById('whatsapp-button');
+                    
+                    // Manejamos el clic del botón directamente, sin un formulario.
+                    whatsappButton.addEventListener('click', async (e) => {
+                        e.preventDefault();
+
+                        // Validar campos
+                        if (!nombreInput.value || !whatsappInput.value || !emailInput.value) {
+                            showMessage('Por favor, completa todos los campos.', 'error');
+                            return;
+                        }
+
+                        // Datos del cliente
+                        const data = {
+                            nombre: nombreInput.value,
+                            whatsapp: whatsappInput.value,
+                            email: emailInput.value
+                        };
+                        
+                        // Generar el enlace de WhatsApp con los datos del formulario
+                        const phoneNumber = '5491122659765';
+                        const message = encodeURIComponent(`Hola New Level, estoy interesado en la oferta de God of War Ragnarök PS4 y PS5 a $9.000 ARS. Mis datos son: Nombre: ${data.nombre}, WhatsApp: ${data.whatsapp}, Email: ${data.email}.`);
+                        const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
+
+                        // Redirigir a WhatsApp
+                        window.location.href = whatsappUrl;
+
+                        // Guardar en Firestore de forma asíncrona y segura
+                        try {
+                            const collectionPath = `/artifacts/${appId}/users/${userId}/registrations`;
+                            await addDoc(collection(db, collectionPath), {
+                                nombre: data.nombre,
+                                whatsapp: data.whatsapp,
+                                email: data.email,
+                                oferta: "God of War Ragnarök PS4 y PS5",
+                                precio: "$9.000 ARS",
+                                timestamp: serverTimestamp()
+                            });
+                            console.log("Datos guardados en Firestore.");
+                        } catch (error) {
+                            console.error("Error al guardar en Firestore:", error);
+                        }
+                    });
+                });
+            } catch (error) {
+                console.error("Error initializing Firebase:", error);
+                showMessage('Error al iniciar la aplicación. Por favor, recarga.', 'error');
+            }
+        } else {
+            console.warn("Firebase config is not available. Firestore functionality will not work.");
+        }
+    </script>
+</body>
+</html>
