@@ -138,34 +138,29 @@
                     await authenticate();
 
                     const offerForm = document.getElementById('offer-form');
-                    
-                    // Manejamos el envío del formulario
+                    const nombreInput = document.getElementById('nombre');
+                    const whatsappInput = document.getElementById('whatsapp');
+                    const emailInput = document.getElementById('email');
+
                     offerForm.addEventListener('submit', async (e) => {
                         e.preventDefault();
-
-                        // Validar campos
-                        const nombreInput = document.getElementById('nombre');
-                        const whatsappInput = document.getElementById('whatsapp');
-                        const emailInput = document.getElementById('email');
 
                         if (!nombreInput.value || !whatsappInput.value || !emailInput.value) {
                             showMessage('Por favor, completa todos los campos.', 'error');
                             return;
                         }
 
-                        // Datos del cliente
                         const data = {
                             nombre: nombreInput.value,
                             whatsapp: whatsappInput.value,
                             email: emailInput.value
                         };
                         
-                        // Generar el enlace de WhatsApp con los datos del formulario
                         const phoneNumber = '5491122659765';
                         const message = encodeURIComponent(`Hola New Level, estoy interesado en la oferta de God of War Ragnarök PS4 y PS5 a $9.000 ARS. Mis datos son: Nombre: ${data.nombre}, WhatsApp: ${data.whatsapp}, Email: ${data.email}.`);
                         const whatsappUrl = `https://wa.me/${phoneNumber}?text=${message}`;
 
-                        // Guardar en Firestore de forma asíncrona y segura
+                        // Guardar en Firestore de forma asíncrona
                         try {
                             const collectionPath = `/artifacts/${appId}/users/${userId}/registrations`;
                             await addDoc(collection(db, collectionPath), {
@@ -182,7 +177,7 @@
                             console.error("Error al guardar en Firestore:", error);
                         }
                         
-                        // Redirigir al usuario al enlace de WhatsApp en una nueva pestaña
+                        // Abrir el enlace de WhatsApp en una nueva pestaña
                         window.open(whatsappUrl, '_blank');
                     });
                 });
